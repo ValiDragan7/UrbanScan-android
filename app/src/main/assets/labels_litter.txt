@@ -1,0 +1,6 @@
+Waste
+Glass
+Metal
+Paper
+Plastic
+Waste
