@@ -18,16 +18,20 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
+import android.media.MediaPlayer
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import android.view.TextureView
 import android.widget.ImageView
+import android.widget.Toolbar
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
-import com.example.helloworld.ml.ModelPothole
+import com.example.helloworld.ml.ModelPotholes
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
+import androidx.fragment.app.Fragment
 
 class DetectionPotholesLive : AppCompatActivity(){
 
@@ -43,8 +47,8 @@ class DetectionPotholesLive : AppCompatActivity(){
     lateinit var handler: Handler
     lateinit var cameraManager: CameraManager
     lateinit var textureView: TextureView
-    lateinit var model: ModelPothole
-
+    lateinit var model: ModelPotholes
+    lateinit var mediaPlayer: MediaPlayer
     private companion object{
         private const val TAG = "PERMISSION_TAG"
     }
@@ -59,7 +63,7 @@ class DetectionPotholesLive : AppCompatActivity(){
         }
         get_permission()
         imageProcessor = ImageProcessor.Builder().add(ResizeOp(320,320,ResizeOp.ResizeMethod.BILINEAR)).build()
-        model = ModelPothole.newInstance(this)
+        model = ModelPotholes.newInstance(this)
         val handlerThread = HandlerThread("videoThread")
         handlerThread.start()
         handler = Handler(handlerThread.looper)
@@ -75,7 +79,9 @@ class DetectionPotholesLive : AppCompatActivity(){
             ) {
                 open_camera()
             }
-
+            fun isMediaPlayerInitialized(): Boolean {
+                return ::mediaPlayer.isInitialized
+            }
             override fun onSurfaceTextureSizeChanged(
                 surface: SurfaceTexture,
                 width: Int,
@@ -98,20 +104,27 @@ class DetectionPotholesLive : AppCompatActivity(){
 
                 val mutable = bitmap.copy(Bitmap.Config.ARGB_8888, true)
                 val canvas = Canvas(mutable)
+                if (detectionResultsList.isNotEmpty()){
+                    if (!::mediaPlayer.isInitialized){
+                        mediaPlayer = MediaPlayer.create(this@DetectionPotholesLive, R.raw.alert)
+                    }
+//
 
-                for (detectionResults in detectionResultsList) {
-                    val location = detectionResults.locationAsRectF
-                    val score = detectionResults.scoreAsFloat
+                    for (detectionResults in detectionResultsList) {
+                        val location = detectionResults.locationAsRectF
+                        val score = detectionResults.scoreAsFloat
 
-                    if (score > 0.5) { // Adjust the confidence threshold as needed
-                        val color = colors.get(1) // Assuming colors is a list of colors
+                        if (score > 0.5) { // Adjust the confidence threshold as needed
+                            mediaPlayer.start()
+                            val color = colors.get(1) // Assuming colors is a list of colors
 
-                        paint.color = color
-                        paint.style = Paint.Style.STROKE
-                        paint.strokeWidth = 3f // Adjust stroke width as needed
+                            paint.color = color
+                            paint.style = Paint.Style.STROKE
+                            paint.strokeWidth = 3f // Adjust stroke width as needed
 
-                        canvas.drawRect(location, paint)
+                            canvas.drawRect(location, paint)
 
+                        }
                     }
                 }
 
@@ -124,6 +137,10 @@ class DetectionPotholesLive : AppCompatActivity(){
     }
 
     override fun onDestroy() {
+        if (::mediaPlayer.isInitialized){
+            mediaPlayer.stop()
+            mediaPlayer.release()
+        }
         super.onDestroy()
         model.close()
     }

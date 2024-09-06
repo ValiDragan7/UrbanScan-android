@@ -106,12 +106,12 @@ class DetectionLitterLive : AppCompatActivity(){
                     val location = detectionResults.locationAsRectF
                     val score = detectionResults.scoreAsFloat
 
-                    if (score > 0.5) { // Adjust the confidence threshold as needed
-                        val color = colors.get(1) // Assuming colors is a list of colors
+                    if (score > 0.5) {
+                        val color = colors.get(1)
 
                         paint.color = color
                         paint.style = Paint.Style.STROKE
-                        paint.strokeWidth = 3f // Adjust stroke width as needed
+                        paint.strokeWidth = 3f
 
                         canvas.drawRect(location, paint)
 
